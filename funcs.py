@@ -134,3 +134,10 @@ def only(iterable, default=None, too_long=None):
         )
         raise too_long or ValueError(msg)
     return first_value
+
+
+def always_reversible(iterable):
+    try:
+        return reversed(iterable)
+    except TypeError:
+        return reversed(list(iterable))
