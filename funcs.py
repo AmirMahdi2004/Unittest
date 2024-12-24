@@ -141,3 +141,49 @@ def always_reversible(iterable):
         return reversed(iterable)
     except TypeError:
         return reversed(list(iterable))
+
+
+def always_iterable(obj, base_type=(str, bytes)):
+    if obj is None:
+        return iter(())
+
+    if (base_type is not None) and isinstance(obj, base_type):
+        return iter((obj,))
+    try:
+        return iter(obj)
+    except TypeError:
+        return iter((obj,))
+
+
+def split_after(iterable, pred, max_split=-1):
+    if max_split == 0:
+        yield list(iterable)
+        return
+    buf = []
+    it = iter(iterable)
+    for item in it:
+        buf.append(item)
+        if pred(item) and buf:
+            yield buf
+            if max_split == 1:
+                yield list(it)
+                return
+            buf = []
+            max_split -= 1
+    if buf:
+        yield buf
+
+
+def split_into(iterable, sizes):
+    it = iter(iterable)
+    for size in sizes:
+        if size is None:
+            yield list(it)
+            return
+        else:
+            yield list(islice(it, size))
+
+
+def map_if(iterable, pred, func, func_else=lambda x: x):
+    for item in iterable:
+        yield func(item) if pred(item) else func_else(item)
