@@ -2,6 +2,7 @@ import traceback
 from unittest import TestCase
 import funcs
 from itertools import count, cycle
+from time import sleep
 
 
 class TakeTests(TestCase):
@@ -553,10 +554,43 @@ class MapIFTests(TestCase):
     def test_with_func_else(self):
         iterable = list(range(-5, 5))
         actual = list(funcs.map_if(iterable, lambda x: x >= 0, lambda x: 'notneg', lambda x: 'neg'))
-        expected = ['neg'] * 5 + ['notneg']*5
+        expected = ['neg'] * 5 + ['notneg'] * 5
         self.assertEqual(actual, expected)
 
     def test_empty(self):
         actual = list(funcs.map_if([], lambda x: len(x) > 5, lambda x: None))
         expected = []
-        self.assertEqual(actual,expected)
+        self.assertEqual(actual, expected)
+
+
+class TimeLimitedTests(TestCase):
+    def test_basic(self):
+        def generator():
+            yield 1
+            yield 2
+            sleep(0.2)
+            yield 3
+
+        iterable = funcs.time_limited(0.1, generator())
+        actual = list(iterable)
+        expected = [1, 2]
+        self.assertEqual(actual, expected)
+        self.assertTrue(iterable.timed_out)
+
+    def test_complete(self):
+        iterable = funcs.time_limited(2, iter(range(10)))
+        actual = list(iterable)
+        expected = [0,1,2,3,4,5,6,7,8,9]
+        self.assertEqual(actual, expected)
+        self.assertFalse(iterable.timed_out)
+
+    def test_zero_limit(self):
+        iterable = funcs.time_limited(0, count())
+        actual = list(iterable)
+        expected = []
+        self.assertEqual(actual, expected)
+        self.assertTrue(iterable.timed_out)
+
+    def test_invalid_limit(self):
+        with self.assertRaises(ValueError):
+            list(funcs.time_limited(-0.1, count()))

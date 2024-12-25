@@ -2,6 +2,7 @@ from itertools import islice, chain, repeat
 from functools import partial
 from collections.abc import Sequence
 from collections import deque
+from time import monotonic
 
 l = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 s = ['a', 'b', 'c', 'd']
@@ -187,3 +188,27 @@ def split_into(iterable, sizes):
 def map_if(iterable, pred, func, func_else=lambda x: x):
     for item in iterable:
         yield func(item) if pred(item) else func_else(item)
+
+
+class time_limited:
+    def __init__(self, limit_seconds, iterable):
+        if limit_seconds < 0:
+            raise ValueError('limit_seconds must be positive')
+        self.limit_seconds = limit_seconds
+        self._iterable = iter(iterable)
+        self._start_time = monotonic()
+        self.timed_out = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.limit_seconds == 0:
+            self.timed_out = True
+            raise StopIteration
+        item = next(self._iterable)
+        if monotonic() - self._start_time > self.limit_seconds:
+            self.timed_out = True
+            raise StopIteration
+
+        return item
