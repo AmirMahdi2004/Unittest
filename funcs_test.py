@@ -1,8 +1,10 @@
 import traceback
-from unittest import TestCase
+from unittest import TestCase, skipIf
 import funcs
-from itertools import count, cycle
+from itertools import count, cycle, accumulate
 from time import sleep
+from operator import add
+from sys import version_info
 
 
 class TakeTests(TestCase):
@@ -580,7 +582,7 @@ class TimeLimitedTests(TestCase):
     def test_complete(self):
         iterable = funcs.time_limited(2, iter(range(10)))
         actual = list(iterable)
-        expected = [0,1,2,3,4,5,6,7,8,9]
+        expected = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.assertEqual(actual, expected)
         self.assertFalse(iterable.timed_out)
 
@@ -594,3 +596,36 @@ class TimeLimitedTests(TestCase):
     def test_invalid_limit(self):
         with self.assertRaises(ValueError):
             list(funcs.time_limited(-0.1, count()))
+
+
+class DifferenceTests(TestCase):
+    def test_normal(self):
+        iterable = [10, 20, 30, 40, 50]
+        actual = list(funcs.difference(iterable))
+        expected = [10, 10, 10, 10, 10]
+        self.assertEqual(actual, expected)
+
+    def test_custom(self):
+        iterable = [10, 20, 30, 40, 50]
+        actual = list(funcs.difference(iterable, add))
+        expected = [10, 30, 50, 70, 90]
+        self.assertEqual(actual, expected)
+
+    def test_roundtrip(self):
+        original = list(range(100))
+        accumulated = accumulate(original)
+        actual = list(funcs.difference(accumulated))
+        self.assertEqual(actual, original)
+
+    def test_one(self):
+        self.assertEqual(list(funcs.difference([0])), [0])
+
+    def test_emtpy(self):
+        self.assertEqual(list(funcs.difference([])), [])
+
+    @skipIf(version_info[:2] < (3, 8), 'accumulate with initial needs +3.8')
+    def test_initial(self):
+        original = list(range(100))
+        accumulated = accumulate(original, initial=100)
+        actual = list(funcs.difference(accumulated, initial=100))
+        self.assertEqual(actual, original)

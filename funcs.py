@@ -1,8 +1,9 @@
-from itertools import islice, chain, repeat
+from itertools import islice, chain, repeat, tee, chain, starmap
 from functools import partial
 from collections.abc import Sequence
 from collections import deque
 from time import monotonic
+from operator import sub
 
 l = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 s = ['a', 'b', 'c', 'd']
@@ -212,3 +213,15 @@ class time_limited:
             raise StopIteration
 
         return item
+
+
+def difference(iterable, func=sub, *, initial=None):
+    a, b = tee(iterable)
+    try:
+        first = [next(b)]
+    except StopIteration:
+        return iter([])
+    if initial is not None:
+        first = []
+
+    return chain(first, starmap(func, zip(b, a)))
