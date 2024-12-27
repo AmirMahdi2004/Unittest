@@ -225,3 +225,14 @@ def difference(iterable, func=sub, *, initial=None):
         first = []
 
     return chain(first, starmap(func, zip(b, a)))
+
+
+def value_chain(*args):
+    for value in args:
+        if isinstance(value, (str, bytes)):
+            yield value
+            continue
+        try:
+            yield from value
+        except TypeError:
+            yield value
